@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constructor de CV</title>
+<meta name="description" content="Crea y descarga tu CV en PDF con foto real y varios temas de color.">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CV Builder">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ffffff;
+    --ink:#1a1a1a;
+    --accent:#1a1a1a;
+    --line:#e3e1dc;
+    --muted:#6b6b66;
+    --surface:#f7f6f3;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  body{
+    font-family:'Inter',sans-serif;
+    background:#eceae4;
+    color:#1a1a1a;
+    min-height:100vh;
+  }
+
+  /* ============ APP SHELL ============ */
+  .app{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    min-height:100vh;
+  }
+
+  /* ============ EDITOR PANEL ============ */
+  .editor{
+    background:#fbfaf8;
+    border-right:1px solid #ddd9d0;
+    padding:28px 26px 80px;
+    overflow-y:auto;
+    max-height:100vh;
+  }
+
+  .editor-header{
+    margin-bottom:24px;
+  }
+
+  .editor-header h1{
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+
+  .editor-header p{
+    font-size:13px;
+    color:#83807a;
+    margin-top:4px;
+  }
+
+  .section-block{
+    margin-bottom:28px;
+    padding-bottom:24px;
+    border-bottom:1px solid #e6e3da;
+  }
+
+  .section-block:last-child{
+    border-bottom:none;
+  }
+
+  .section-title{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:#9a9690;
+    margin-bottom:14px;
+  }
+
+  .field{
+    margin-bottom:12px;
+  }
+
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#4a4844;
+    margin-bottom:5px;
+  }
+
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="tel"],
+  .field textarea{
+    width:100%;
+    padding:9px 11px;
+    border:1px solid #d8d4c9;
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+    color:#1a1a1a;
+    transition:border-color .15s;
+  }
+
+  .field input:focus,
+  .field textarea:focus{
+    outline:none;
+    border-color:#9a9690;
+  }
+
+  .field textarea{
+    resize:vertical;
+    min-height:64px;
+    line-height:1.5;
+  }
+
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  /* Photo upload */
+  .photo-upload{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .photo-preview{
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:#eceae4;
+    border:1px solid #d8d4c9;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+
+  .photo-preview img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+
+  .photo-preview svg{
+    width:26px;
+    height:26px;
+    color:#bcb8ae;
+  }
+
+  .upload-btns{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+
+  .btn-secondary{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:7px 13px;
+    border-radius:6px;
+    border:1px solid #d8d4c9;
+    background:#fff;
+    color:#34322e;
+    cursor:pointer;
+    transition:all .15s;
+  }
+
+  .btn-secondary:hover{
+    border-color:#9a9690;
+    background:#f7f6f3;
+  }
+
+  .btn-text{
+    font-size:11.5px;
+    color:#9a9690;
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-align:left;
+    padding:0;
+  }
+
+  .btn-text:hover{ color:#6b6b66; }
+
+  /* Repeatable entries (experience / skills) */
+  .entry-card{
+    background:#fff;
+    border:1px solid #e6e3da;
+    border-radius:8px;
+    padding:14px;
+    margin-bottom:10px;
+    position:relative;
+  }
+
+  .entry-remove{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    border:none;
+    background:#f1efe9;
+    color:#9a9690;
+    cursor:pointer;
+    font-size:14px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .entry-remove:hover{
+    background:#e8c8c0;
+    color:#8a3d2f;
+  }
+
+  .add-btn{
+    width:100%;
+    padding:10px;
+    border:1.5px dashed #c9c5ba;
+    border-radius:7px;
+    background:none;
+    color:#6b6b66;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s;
+  }
+
+  .add-btn:hover{
+    border-color:#9a9690;
+    color:#34322e;
+    background:#f7f6f3;
+  }
+
+  .skill-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+
+  .skill-row input{ flex:1; }
+
+  .skill-remove{
+    width:24px;
+    height:24px;
+    flex-shrink:0;
+    border-radius:5px;
+    border:1px solid #e6e3da;
+    background:#fff;
+    color:#b0aca2;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .skill-remove:hover{ background:#f1efe9; color:#8a3d2f; }
+
+  /* Theme swatches */
+  .theme-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+
+  .theme-swatch{
+    cursor:pointer;
+    border-radius:9px;
+    border:2px solid transparent;
+    padding:3px;
+    transition:border-color .15s;
+  }
+
+  .theme-swatch.active{
+    border-color:#1a1a1a;
+  }
+
+  .swatch-color{
+    height:46px;
+    border-radius:6px;
+    margin-bottom:5px;
+  }
+
+  .theme-swatch span{
+    font-size:10.5px;
+    font-weight:600;
+    color:#6b6b66;
+    display:block;
+    text-align:center;
+  }
+
+  /* Download button */
+  .download-bar{
+    position:sticky;
+    bottom:0;
+    background:#fbfaf8;
+    border-top:1px solid #ddd9d0;
+    padding:16px 26px;
+    margin:0 -26px -80px;
+  }
+
+  .btn-primary{
+    width:100%;
+    padding:13px;
+    border-radius:8px;
+    border:none;
+    background:#1a1a1a;
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:background .15s;
+  }
+
+  .btn-primary:hover{ background:#373737; }
+  .btn-primary svg{ width:16px; height:16px; }
+
+  /* ============ PREVIEW PANE ============ */
+  .preview-pane{
+    background:#eceae4;
+    padding:40px;
+    display:flex;
+    justify-content:center;
+    overflow-y:auto;
+    max-height:100vh;
+  }
+
+  .cv-page{
+    width:210mm;
+    min-height:297mm;
+    background:var(--paper);
+    box-shadow:0 8px 32px rgba(0,0,0,0.12);
+    flex-shrink:0;
+  }
+
+  /* ============ CV CONTENT ============ */
+  .cv-header{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:24px;
+    padding:42px 46px 30px;
+    border-bottom:2px solid var(--line);
+    align-items:center;
+  }
+
+  .cv-name{
+    font-family:'Fraunces',serif;
+    font-size:34px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    line-height:1.1;
+  }
+
+  .cv-title{
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--accent);
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    margin-top:6px;
+  }
+
+  .cv-contact{
+    margin-top:14px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .cv-contact-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11.5px;
+    color:var(--muted);
+  }
+
+  .cv-contact-item svg{
+    width:13px;
+    height:13px;
+    color:var(--accent);
+    flex-shrink:0;
+  }
+
+  .cv-photo{
+    width:108px;
+    height:108px;
+    border-radius:50%;
+    overflow:hidden;
+    background:var(--surface);
+    border:3px solid var(--accent);
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .cv-photo img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+
+  .cv-photo svg{
+    width:42px;
+    height:42px;
+    color:#cbc8c0;
+  }
+
+  .cv-body{
+    padding:30px 46px 46px;
+  }
+
+  .cv-section{
+    margin-bottom:26px;
+  }
+
+  .cv-section:last-child{ margin-bottom:0; }
+
+  .cv-section-title{
+    font-family:'Fraunces',serif;
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-bottom:12px;
+    padding-bottom:7px;
+    border-bottom:1.5px solid var(--accent);
+    display:inline-block;
+  }
+
+  .cv-summary{
+    font-size:12.5px;
+    line-height:1.7;
+    color:#3a3a36;
+  }
+
+  .skills-cols{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px 24px;
+  }
+
+  .skill-pill{
+    font-size:12px;
+    color:#3a3a36;
+    padding:5px 0;
+    position:relative;
+    padding-left:14px;
+  }
+
+  .skill-pill::before{
+    content:'';
+    position:absolute;
+    left:0;
+    top:11px;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--accent);
+  }
+
+  .exp-entry{
+    margin-bottom:16px;
+  }
+
+  .exp-entry:last-child{ margin-bottom:0; }
+
+  .exp-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:3px;
+  }
+
+  .exp-role{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .exp-dates{
+    font-size:11px;
+    font-weight:600;
+    color:var(--accent);
+    white-space:nowrap;
+  }
+
+  .exp-company{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:5px;
+  }
+
+  .exp-desc{
+    font-size:12px;
+    line-height:1.65;
+    color:#3a3a36;
+  }
+
+  .cv-footer-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+    margin-top:26px;
+  }
+
+  .empty-state-hint{
+    color:#b0aca2;
+    font-style:italic;
+  }
+
+  /* ============ PRINT ============ */
+  @page{
+    size:A4;
+    margin:0;
+  }
+
+  @media print{
+    html, body{
+      background:#fff;
+      width:210mm;
+      height:297mm;
+    }
+    .app{ display:block; }
+    .editor{ display:none; }
+    .preview-pane{
+      display:block;
+      padding:0;
+      max-height:none;
+      overflow:visible;
+      background:#fff;
+    }
+    .cv-page{
+      width:210mm;
+      min-height:297mm;
+      box-shadow:none;
+      margin:0;
+    }
+  }
+
+  /* Responsive fallback */
+  @media (max-width:1100px){
+    .app{ grid-template-columns:1fr; }
+    .preview-pane{ max-height:none; }
+    .editor{ max-height:none; }
+    .cv-page{ width:100%; max-width:210mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ EDITOR ============ -->
+  <div class="editor">
+    <div class="editor-header">
+      <h1>Constructor de CV</h1>
+      <p>Edita tus datos y mira los cambios al instante</p>
+    </div>
+
+    <!-- Foto -->
+    <div class="section-block">
+      <div class="section-title">Foto de perfil</div>
+      <div class="photo-upload">
+        <div class="photo-preview" id="photoPreview">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        </div>
+        <div class="upload-btns">
+          <input type="file" id="photoInput" accept="image/*" style="display:none">
+          <button class="btn-secondary" onclick="document.getElementById('photoInput').click()">Subir foto</button>
+          <button class="btn-text" id="removePhotoBtn" style="display:none">Quitar foto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos personales -->
+    <div class="section-block">
+      <div class="section-title">Datos personales</div>
+      <div class="field">
+        <label>Nombre completo</label>
+        <input type="text" id="f-name" value="Laura Méndez">
+      </div>
+      <div class="field">
+        <label>Título profesional</label>
+        <input type="text" id="f-jobtitle" value="Diseñadora de Producto">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="tel" id="f-phone" value="+34 612 345 678">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="f-email" value="laura.mendez@email.com">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Ciudad</label>
+          <input type="text" id="f-city" value="Madrid, España">
+        </div>
+        <div class="field">
+          <label>Web / Portafolio</label>
+          <input type="text" id="f-web" value="lauramendez.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="section-block">
+      <div class="section-title">Perfil profesional</div>
+      <div class="field">
+        <textarea id="f-summary">Profesional con más de 6 años de experiencia diseñando productos digitales centrados en el usuario. Especializada en convertir necesidades complejas en soluciones simples, claras y elegantes, trabajando en equipos multidisciplinares de alto rendimiento.</textarea>
+      </div>
+    </div>
+
+    <!-- Habilidades -->
+    <div class="section-block">
+      <div class="section-title">Habilidades</div>
+      <div id="skillsList"></div>
+      <button class="add-btn" id="addSkillBtn">+ Añadir habilidad</button>
+    </div>
+
+    <!-- Experiencia -->
+    <div class="section-block">
+      <div class="section-title">Experiencia laboral</div>
+      <div id="expList"></div>
+      <button class="add-btn" id="addExpBtn">+ Añadir experiencia</button>
+    </div>
+
+    <!-- Tema -->
+    <div class="section-block">
+      <div class="section-title">Color del tema</div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+
+    <div class="download-bar">
+      <button class="btn-primary" id="downloadBtn">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+        Descargar CV en PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ PREVIEW ============ -->
+  <div class="preview-pane">
+    <div class="cv-page" id="cvPage">
+      <div class="cv-header">
+        <div>
+          <div class="cv-name" id="p-name">Laura Méndez</div>
+          <div class="cv-title" id="p-jobtitle">Diseñadora de Producto</div>
+          <div class="cv-contact">
+            <div class="cv-contact-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+              <span id="p-phone">+34 612 345 678</span>
+            </div>
+            <div class="cv-contact-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+              <span id="p-email">laura.mendez@email.com</span>
+            </div>
+            <div class="cv-contact-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+              <span id="p-city">Madrid, España</span>
+            </div>
+            <div class="cv-contact-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m-15.432 0A8.959 8.959 0 013 12c0-.778.099-1.533.284-2.253" /></svg>
+              <span id="p-web">lauramendez.com</span>
+            </div>
+          </div>
+        </div>
+        <div class="cv-photo" id="p-photo">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        </div>
+      </div>
+
+      <div class="cv-body">
+        <div class="cv-section">
+          <div class="cv-section-title">Perfil</div>
+          <div class="cv-summary" id="p-summary"></div>
+        </div>
+
+        <div class="cv-footer-grid">
+          <div class="cv-section">
+            <div class="cv-section-title">Experiencia</div>
+            <div id="p-experience"></div>
+          </div>
+          <div class="cv-section">
+            <div class="cv-section-title">Habilidades</div>
+            <div class="skills-cols" id="p-skills"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== THEMES ===================== */
+const themes = [
+  { id:'ivory',  name:'Marfil',  paper:'#fffdf9', ink:'#2b2520', accent:'#9c6b3e', line:'#e8e0d3', muted:'#7a6f60', surface:'#f6f0e6' },
+  { id:'slate',  name:'Pizarra', paper:'#ffffff', ink:'#1f2733', accent:'#3d5a73', line:'#dde3e8', muted:'#5e6b78', surface:'#eef1f4' },
+  { id:'sand',   name:'Arena',   paper:'#fffefb', ink:'#332d23', accent:'#a4732f', line:'#e9e0cf', muted:'#7d7261', surface:'#f3ecdc' },
+  { id:'editor', name:'Editorial', paper:'#ffffff', ink:'#171717', accent:'#1a1a1a', line:'#e2e2e2', muted:'#6b6b6b', surface:'#f5f5f5' }
+];
+let activeTheme = 'ivory';
+
+function applyTheme(id){
+  const t = themes.find(x=>x.id===id);
+  if(!t) return;
+  activeTheme = id;
+  const root = document.getElementById('cvPage').style;
+  root.setProperty('--paper', t.paper);
+  root.setProperty('--ink', t.ink);
+  root.setProperty('--accent', t.accent);
+  root.setProperty('--line', t.line);
+  root.setProperty('--muted', t.muted);
+  root.setProperty('--surface', t.surface);
+  document.querySelectorAll('.theme-swatch').forEach(el=>{
+    el.classList.toggle('active', el.dataset.theme===id);
+  });
+}
+
+function buildThemeGrid(){
+  const grid = document.getElementById('themeGrid');
+  grid.innerHTML = themes.map(t=>`
+    <div class="theme-swatch ${t.id===activeTheme?'active':''}" data-theme="${t.id}">
+      <div class="swatch-color" style="background:linear-gradient(135deg, ${t.paper} 50%, ${t.accent} 50%)"></div>
+      <span>${t.name}</span>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.theme-swatch').forEach(el=>{
+    el.addEventListener('click', ()=>applyTheme(el.dataset.theme));
+  });
+}
+
+/* ===================== STATE ===================== */
+let skills = ['Diseño UX/UI', 'Figma & Sketch', 'Investigación de usuarios', 'Prototipado', 'Sistemas de diseño', 'HTML & CSS'];
+let experiences = [
+  { role:'Diseñadora de Producto Senior', company:'Estudio Nimbus', dates:'2022 — Presente', desc:'Liderazgo del equipo de diseño en el rediseño completo de la plataforma principal, mejorando la retención de usuarios en un 24%.' },
+  { role:'Diseñadora UX', company:'Compañía Vértice', dates:'2019 — 2022', desc:'Diseño de flujos end-to-end para una app móvil con más de 200.000 usuarios activos mensuales.' }
+];
+
+/* ===================== RENDER ===================== */
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function renderPreview(){
+  document.getElementById('p-name').textContent = document.getElementById('f-name').value || 'Tu nombre';
+  document.getElementById('p-jobtitle').textContent = document.getElementById('f-jobtitle').value || 'Título profesional';
+  document.getElementById('p-phone').textContent = document.getElementById('f-phone').value;
+  document.getElementById('p-email').textContent = document.getElementById('f-email').value;
+  document.getElementById('p-city').textContent = document.getElementById('f-city').value;
+  document.getElementById('p-web').textContent = document.getElementById('f-web').value;
+  document.getElementById('p-summary').textContent = document.getElementById('f-summary').value;
+
+  // Toggle contact rows if empty
+  [['f-phone','p-phone'],['f-email','p-email'],['f-city','p-city'],['f-web','p-web']].forEach(([fid,pid])=>{
+    const val = document.getElementById(fid).value.trim();
+    document.getElementById(pid).closest('.cv-contact-item').style.display = val ? 'flex' : 'none';
+  });
+
+  // Skills
+  const skillsHtml = skills.filter(s=>s.trim()).map(s=>`<div class="skill-pill">${escapeHtml(s)}</div>`).join('');
+  document.getElementById('p-skills').innerHTML = skillsHtml || '<div class="empty-state-hint">Añade tus habilidades</div>';
+
+  // Experience
+  const expHtml = experiences.map(e=>`
+    <div class="exp-entry">
+      <div class="exp-top">
+        <div class="exp-role">${escapeHtml(e.role) || 'Puesto'}</div>
+        <div class="exp-dates">${escapeHtml(e.dates)}</div>
+      </div>
+      <div class="exp-company">${escapeHtml(e.company)}</div>
+      <div class="exp-desc">${escapeHtml(e.desc)}</div>
+    </div>
+  `).join('');
+  document.getElementById('p-experience').innerHTML = expHtml || '<div class="empty-state-hint">Añade tu experiencia laboral</div>';
+}
+
+/* ===================== EDITOR: SKILLS ===================== */
+function renderSkillsEditor(){
+  const list = document.getElementById('skillsList');
+  list.innerHTML = skills.map((s,i)=>`
+    <div class="skill-row">
+      <input type="text" data-idx="${i}" class="skill-input" value="${escapeHtml(s)}">
+      <button class="skill-remove" data-idx="${i}">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.skill-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      skills[+inp.dataset.idx] = inp.value;
+      renderPreview();
+    });
+  });
+  list.querySelectorAll('.skill-remove').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      skills.splice(+btn.dataset.idx,1);
+      renderSkillsEditor();
+      renderPreview();
+    });
+  });
+}
+
+document.getElementById('addSkillBtn').addEventListener('click', ()=>{
+  skills.push('Nueva habilidad');
+  renderSkillsEditor();
+  renderPreview();
+});
+
+/* ===================== EDITOR: EXPERIENCE ===================== */
+function renderExpEditor(){
+  const list = document.getElementById('expList');
+  list.innerHTML = experiences.map((e,i)=>`
+    <div class="entry-card">
+      <button class="entry-remove" data-idx="${i}">✕</button>
+      <div class="field">
+        <label>Puesto</label>
+        <input type="text" class="exp-role-input" data-idx="${i}" value="${escapeHtml(e.role)}">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Empresa</label>
+          <input type="text" class="exp-company-input" data-idx="${i}" value="${escapeHtml(e.company)}">
+        </div>
+        <div class="field">
+          <label>Fechas</label>
+          <input type="text" class="exp-dates-input" data-idx="${i}" value="${escapeHtml(e.dates)}">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Descripción</label>
+        <textarea class="exp-desc-input" data-idx="${i}" style="min-height:48px">${escapeHtml(e.desc)}</textarea>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.exp-role-input').forEach(inp=>inp.addEventListener('input', ()=>{ experiences[+inp.dataset.idx].role = inp.value; renderPreview(); }));
+  list.querySelectorAll('.exp-company-input').forEach(inp=>inp.addEventListener('input', ()=>{ experiences[+inp.dataset.idx].company = inp.value; renderPreview(); }));
+  list.querySelectorAll('.exp-dates-input').forEach(inp=>inp.addEventListener('input', ()=>{ experiences[+inp.dataset.idx].dates = inp.value; renderPreview(); }));
+  list.querySelectorAll('.exp-desc-input').forEach(inp=>inp.addEventListener('input', ()=>{ experiences[+inp.dataset.idx].desc = inp.value; renderPreview(); }));
+  list.querySelectorAll('.entry-remove').forEach(btn=>btn.addEventListener('click', ()=>{
+    experiences.splice(+btn.dataset.idx,1);
+    renderExpEditor();
+    renderPreview();
+  }));
+}
+
+document.getElementById('addExpBtn').addEventListener('click', ()=>{
+  experiences.push({ role:'Nuevo puesto', company:'Empresa', dates:'2023 — 2024', desc:'Describe tus responsabilidades y logros.' });
+  renderExpEditor();
+  renderPreview();
+});
+
+/* ===================== PERSONAL FIELDS ===================== */
+['f-name','f-jobtitle','f-phone','f-email','f-city','f-web','f-summary'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderPreview);
+});
+
+/* ===================== PHOTO UPLOAD ===================== */
+const photoInput = document.getElementById('photoInput');
+const photoPreview = document.getElementById('photoPreview');
+const cvPhoto = document.getElementById('p-photo');
+const removePhotoBtn = document.getElementById('removePhotoBtn');
+const placeholderSvg = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>`;
+
+photoInput.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const imgHtml = `<img src="${ev.target.result}" alt="Foto de perfil">`;
+    photoPreview.innerHTML = imgHtml;
+    cvPhoto.innerHTML = imgHtml;
+    removePhotoBtn.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+removePhotoBtn.addEventListener('click', ()=>{
+  photoPreview.innerHTML = placeholderSvg;
+  cvPhoto.innerHTML = placeholderSvg;
+  removePhotoBtn.style.display = 'none';
+  photoInput.value = '';
+});
+
+/* ===================== PDF DOWNLOAD ===================== */
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  window.print();
+});
+
+/* ===================== INIT ===================== */
+buildThemeGrid();
+applyTheme('ivory');
+renderSkillsEditor();
+renderExpEditor();
+renderPreview();
+/* ===================== PWA: SERVICE WORKER ===================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+
+</body>
+</html>
